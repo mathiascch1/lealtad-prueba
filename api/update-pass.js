@@ -1,7 +1,33 @@
 // /api/update-pass.js — Vercel Serverless Function
-// Actualiza los sellos de un pase existente en Apple/Google Wallet
+const https = require('https');
 
-export default async function handler(req, res) {
+function apiRequest(method, path, body, apiKey) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const req = https.request({
+      hostname: 'api.walletwallet.dev',
+      path: path,
+      method: method,
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data)
+      }
+    }, (res) => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        try { resolve({ status: res.statusCode, data: JSON.parse(body) }); }
+        catch(e) { resolve({ status: res.statusCode, data: body }); }
+      });
+    });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'PUT, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -17,33 +43,27 @@ export default async function handler(req, res) {
 
     const remaining = (maxStamps || 6) - (stamps || 0);
     const progressMsg = hasReward
-      ? '¡PREMIO LISTO! Pídelo al cajero 🎁'
-      : `Te faltan ${remaining} sellos`;
+      ? 'PREMIO LISTO! Pidelo al cajero'
+      : 'Te faltan ' + remaining + ' sellos';
 
     const updateData = {
-      headerFields: [{ key: 'stamps', label: 'SELLOS', value: `${stamps || 0} / ${maxStamps || 6}` }],
+      headerFields: [{ key: 'stamps', label: 'SELLOS', value: (stamps || 0) + ' / ' + (maxStamps || 6) }],
       auxiliaryFields: [{ key: 'progress', label: 'PROGRESO', value: progressMsg }],
       changeMessage: hasReward
-        ? '🎁 ¡Completaste tu tarjeta! Pasa a recoger tu premio.'
-        : `☕ +1 sello. Llevas ${stamps}/${maxStamps}. ${progressMsg}`
+        ? 'Completaste tu tarjeta! Pasa a recoger tu premio.'
+        : '+1 sello. Llevas ' + stamps + '/' + maxStamps + '. ' + progressMsg
     };
 
-    const response = await fetch(`https://api.walletwallet.dev/api/passes/${serial}`, {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(updateData)
-    });
+    const result = await apiRequest('PUT', '/api/passes/' + serial, updateData, API_KEY);
 
-    if (!response.ok) {
-      const errText = await response.text();
-      return res.status(response.status).json({ error: 'Error al actualizar el pase', details: errText });
+    if (result.status >= 400) {
+      return res.status(result.status).json({ error: 'Error al actualizar', details: result.data });
     }
 
-    const result = await response.json();
-    return res.status(200).json({ success: true, result });
+    return res.status(200).json({ success: true, result: result.data });
 
   } catch (err) {
     console.error('update-pass error:', err);
-    return res.status(500).json({ error: 'Error interno del servidor' });
+    return res.status(500).json({ error: 'Error interno', msg: err.message });
   }
-}
+};
