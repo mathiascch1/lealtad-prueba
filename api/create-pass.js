@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
   if (!API_KEY) return res.status(500).json({ error: 'API key no configurada' });
 
   try {
-    const { clientName, clientPhone, stamps, maxStamps, prize, businessName, businessAddr, businessLat, businessLng } = req.body;
+    const { clientName, clientPhone, stamps, maxStamps, prize, businessName, businessAddr, businessLat, businessLng, walletColor, walletLogo, walletStrip, walletIcon } = req.body;
 
     if (!clientName || !clientPhone) {
       return res.status(400).json({ error: 'Faltan datos del cliente' });
@@ -47,10 +47,9 @@ module.exports = async function handler(req, res) {
     const passData = {
       passType: 'storeCard',
       organizationName: businessName || 'Cafetería Mi tostadita',
+      logoText: businessName || 'Cafetería Mi tostadita',
       description: 'Tarjeta de lealtad - ' + (businessName || 'Cafetería Mi tostadita'),
-      backgroundColor: 'rgb(232, 148, 58)',
-      foregroundColor: 'rgb(255, 255, 255)',
-      labelColor: 'rgb(255, 243, 196)',
+      color: walletColor || '#E8943A',
       headerFields: [
         { key: 'stamps', label: 'SELLOS', value: (stamps || 0) + ' / ' + (maxStamps || 6) }
       ],
@@ -75,6 +74,9 @@ module.exports = async function handler(req, res) {
       ] : [],
       changeMessage: 'Tu tarjeta de lealtad se ha actualizado.'
     };
+    if (walletLogo) passData.logoURL = walletLogo;
+    if (walletStrip) passData.stripURL = walletStrip;
+    if (walletIcon) passData.iconURL = walletIcon;
 
     const result = await apiRequest('POST', '/api/passes', passData, API_KEY);
 
