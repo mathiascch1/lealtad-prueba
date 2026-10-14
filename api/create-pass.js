@@ -69,6 +69,7 @@ module.exports = async function handler(req, res) {
         { key: 'contact', label: 'Contacto', value: clientPhone }
       ],
       barcode: { message: (siteUrl || 'https://lealtad-prueba.vercel.app') + '?c=' + clientPhone, format: 'PKBarcodeFormatQR', messageEncoding: 'iso-8859-1', altText: clientPhone },
+      barcodes: [{ message: (siteUrl || 'https://lealtad-prueba.vercel.app') + '?c=' + clientPhone, format: 'PKBarcodeFormatQR', messageEncoding: 'iso-8859-1', altText: clientPhone }],
       locations: (businessLat && businessLng) ? [
         { latitude: parseFloat(businessLat), longitude: parseFloat(businessLng), relevantText: '¡Estás cerca de ' + (businessName || 'Cafetería Mi tostadita') + '! Pasa a sumar un sello' }
       ] : [],
