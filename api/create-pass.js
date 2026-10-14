@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
   if (!API_KEY) return res.status(500).json({ error: 'API key no configurada' });
 
   try {
-    const { clientName, clientPhone, stamps, maxStamps, prize, businessName, businessAddr, businessLat, businessLng, walletColor, walletLogo, walletStrip, walletIcon } = req.body;
+    const { clientName, clientPhone, stamps, maxStamps, prize, businessName, businessAddr, businessLat, businessLng, walletColor, walletLogo, walletStrip, walletIcon, siteUrl } = req.body;
 
     if (!clientName || !clientPhone) {
       return res.status(400).json({ error: 'Faltan datos del cliente' });
@@ -68,15 +68,17 @@ module.exports = async function handler(req, res) {
         { key: 'addr', label: 'Dirección', value: businessAddr || '' },
         { key: 'contact', label: 'Contacto', value: clientPhone }
       ],
-      barcode: { message: clientPhone, format: 'PKBarcodeFormatQR', messageEncoding: 'iso-8859-1', altText: clientPhone },
+      barcode: { message: (siteUrl || 'https://lealtad-prueba.vercel.app') + '?c=' + clientPhone, format: 'PKBarcodeFormatQR', messageEncoding: 'iso-8859-1', altText: clientPhone },
       locations: (businessLat && businessLng) ? [
         { latitude: parseFloat(businessLat), longitude: parseFloat(businessLng), relevantText: '¡Estás cerca de ' + (businessName || 'Cafetería Mi tostadita') + '! Pasa a sumar un sello' }
       ] : [],
       changeMessage: 'Tu tarjeta de lealtad se ha actualizado.'
     };
-    if (walletLogo) passData.logoURL = walletLogo;
-    if (walletStrip) passData.stripURL = walletStrip;
-    if (walletIcon) passData.iconURL = walletIcon;
+    // Solo enviar URLs de imagenes si son URLs validas (https y terminan en imagen)
+    function isImageUrl(u) { return u && u.startsWith('https://') && /\.(png|jpg|jpeg|gif|webp)(\?.*)?$/i.test(u); }
+    if (isImageUrl(walletLogo)) passData.logoURL = walletLogo;
+    if (isImageUrl(walletStrip)) passData.stripURL = walletStrip;
+    if (isImageUrl(walletIcon)) passData.iconURL = walletIcon;
 
     const result = await apiRequest('POST', '/api/passes', passData, API_KEY);
 
