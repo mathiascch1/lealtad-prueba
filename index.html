@@ -266,7 +266,11 @@ async function walletCreate(c){
         businessName:D.cfg.name,
         businessAddr:D.cfg.addr,
         businessLat:BUSINESS_LAT,
-        businessLng:BUSINESS_LNG
+        businessLng:BUSINESS_LNG,
+        walletColor:D.cfg.wColor||'',
+        walletLogo:D.cfg.wLogo||'',
+        walletStrip:D.cfg.wStrip||'',
+        walletIcon:D.cfg.wIcon||''
       })
     });
     if(!res.ok){const et=await res.text();console.error('API:',res.status,et);throw new Error(res.status+': '+et)}
@@ -277,7 +281,7 @@ async function walletCreate(c){
       save();await fbSaveC(c);
     }
     return data;
-  }catch(e){console.error('walletCreate error:',e.message);showToast('Error: '+e.message);return null}
+  }catch(e){console.error('walletCreate error:',e.message);return null}
 }
 
 async function walletUpdate(c){
@@ -313,7 +317,7 @@ const addLog=(k,txt)=>{const e={k,txt,t:Date.now()};D.log.unshift(e);D.log=D.log
 const AL='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const ncode=x=>String(x).toUpperCase().replace(/[^A-Z0-9]/g,'');
 function newCode(){let c;do{c='';for(let i=0;i<6;i++)c+=AL[Math.floor(Math.random()*AL.length)];c=c.slice(0,3)+'-'+c.slice(3)}while(D.clients.some(x=>x.code===c));return c}
-function showToast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+let _toastT;function showToast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(_toastT);_toastT=setTimeout(()=>t.classList.remove('show'),2500)}
 function setFlash(m){flash=m;render();if(m)setTimeout(()=>{flash='';render()},3500)}
 addEventListener('storage',e=>{if(e.key===LS&&document.activeElement.tagName!=='INPUT'){D=lsR()||dflt();render()}});
 
@@ -526,6 +530,13 @@ function adminHTML(){
   <label for="ca">Dirección</label><input id="ca" value="${esc(D.cfg.addr||'')}">
   <label for="ch">Horario</label><input id="ch" value="${esc(D.cfg.hrs||'')}">
   <label for="ck">Clave del cajero</label><input id="ck" value="${esc(D.cfg.pin)}">
+  <details style="margin-top:12px"><summary style="font-size:13px;font-weight:600;cursor:pointer">🎨 Diseño de Wallet (opcional)</summary>
+  <label for="wc" style="margin-top:8px">Color del pase (hex)</label><input id="wc" placeholder="#E8943A" value="${esc(D.cfg.wColor||'')}">
+  <label for="wl">URL del logo (160×160 PNG)</label><input id="wl" placeholder="https://..." value="${esc(D.cfg.wLogo||'')}">
+  <label for="ws">URL del banner (1080×360 PNG)</label><input id="ws" placeholder="https://..." value="${esc(D.cfg.wStrip||'')}">
+  <label for="wi">URL del ícono (120×120 PNG)</label><input id="wi" placeholder="https://..." value="${esc(D.cfg.wIcon||'')}">
+  <p class="mute small">Sube tus imágenes a <a href="https://imgur.com" target="_blank">imgur.com</a> o similar y pega el link directo.</p>
+  </details>
   <button class="btn" data-a="cfg">Guardar ajustes</button></details></div>
   <p class="db-badge">${useFB?'🔥 Conectado a Firebase — datos en la nube':'💾 Datos locales — configura Firebase para persistencia'}</p>`;
 }
@@ -591,7 +602,7 @@ document.addEventListener('click',async e=>{
     if(wr&&wr.shareUrl){showToast('¡Tarjeta guardada! 📱');window.open(wr.shareUrl,'_blank')}
     else{
       el.disabled=false;el.innerHTML='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 10h20"/><rect x="14" y="14" width="4" height="2" rx="1"/></svg> Guardar en Apple / Google Wallet';
-      showToast('Error Wallet — abre consola (F12) para ver detalles');
+      showToast('Wallet no disponible por ahora');
     }
   }
   else if(a==='goCard'){D.me=justReg;justReg=null}
@@ -650,7 +661,8 @@ document.addEventListener('click',async e=>{
     const mm=parseInt($('#cm').value,10);
     if(!(mm>=3&&mm<=10)){showToast('Sellos: 3 a 10');return}
     if(!$('#ck').value.trim()){showToast('Pon una clave');return}
-    D.cfg={name:$('#cn').value.trim()||'Mi negocio',cat:$('#cc').value.trim()||'Cafetería',prize:$('#cp').value.trim()||'Premio',meta:mm,end:$('#ce').value.trim(),addr:$('#ca').value.trim(),hrs:$('#ch').value.trim(),pin:$('#ck').value.trim()};
+    const wc=$('#wc'),wl=$('#wl'),ws=$('#ws'),wi=$('#wi');
+    D.cfg={name:$('#cn').value.trim()||'Mi negocio',cat:$('#cc').value.trim()||'Cafetería',prize:$('#cp').value.trim()||'Premio',meta:mm,end:$('#ce').value.trim(),addr:$('#ca').value.trim(),hrs:$('#ch').value.trim(),pin:$('#ck').value.trim(),wColor:wc?wc.value.trim():'',wLogo:wl?wl.value.trim():'',wStrip:ws?ws.value.trim():'',wIcon:wi?wi.value.trim():''};
     D.clients.forEach(x=>{if(x.s>=mm){x.s=mm;x.r=true}else x.r=false});
     await fbSaveCfg();setFlash('💾 Ajustes guardados');
     if(useFB)for(const cl of D.clients)await fbSaveC(cl);
