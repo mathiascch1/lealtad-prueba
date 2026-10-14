@@ -506,7 +506,8 @@ function detailHTML(){
   const kv=(a,b)=>`<div class="kv"><span>${a}</span><b>${b}</b></div>`;
   return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><h3 style="margin:0;font-size:15px">Datos del cliente</h3><button class="lnk" data-a="selx">Cerrar</button></div>
   ${kv('Nombre',esc(c.n))}${kv('Celular',esc(c.p))}${kv('Correo',c.em?esc(c.em):'—')}${kv('Código',esc(c.code))}${kv('Registrado',fd(c.at))}${kv('Sellos',c.s+'/'+D.cfg.meta)}${kv('Visitas',c.tot||0)}${kv('Premios canjeados',c.rw||0)}
-  <button class="btn ghost" data-a="delclient" data-id="${c.id}" style="color:var(--bad);font-size:12px;margin-top:6px">Eliminar cliente</button></div>`;
+  ${!c.r?`<button class="btn" data-a="add" data-id="${c.id}" style="margin-top:14px;font-size:16px;padding:16px;background:var(--ok);letter-spacing:.5px">⭐ AGREGAR SELLO</button>`:`<button class="btn" data-a="deliver" data-id="${c.id}" style="margin-top:14px;font-size:16px;padding:16px;background:var(--accent);color:#333;letter-spacing:.5px">🎁 ENTREGAR PREMIO</button>`}
+  <div style="display:flex;gap:8px;margin-top:8px"><button class="btn ghost" data-a="undo" data-id="${c.id}" style="flex:1;font-size:12px">↩ Quitar sello</button><button class="btn ghost" data-a="delclient" data-id="${c.id}" style="flex:1;color:var(--bad);font-size:12px">Eliminar</button></div></div>`;
 }
 
 function adminHTML(){
@@ -642,7 +643,7 @@ document.addEventListener('click',async e=>{
   else if(a==='deliver'&&c){
     c.s=0;c.r=false;c.t=Date.now();c.rw=(c.rw||0)+1;
     addLog('p','Premio: '+c.n);setFlash('🎁 Premio entregado a '+esc(c.n));
-    await fbSaveC(c);showToast('Premio entregado 🎁');
+    await fbSaveC(c);walletUpdate(c);showToast('Premio entregado 🎁');
   }
   else if(a==='newc'){
     const p=$('#np').value.replace(/\D/g,''),em=$('#ne')?.value.trim()||'';
