@@ -45,7 +45,7 @@ module.exports = async function handler(req, res) {
     }
 
     const passData = {
-      passType: 'storeCard',
+      passType: 'generic',
       organizationName: businessName || 'Cafetería Mi tostadita',
       logoText: businessName || 'Cafetería Mi tostadita',
       description: 'Tarjeta de lealtad - ' + (businessName || 'Cafetería Mi tostadita'),
@@ -68,8 +68,8 @@ module.exports = async function handler(req, res) {
         { key: 'addr', label: 'Dirección', value: businessAddr || '' },
         { key: 'contact', label: 'Contacto', value: clientPhone }
       ],
-      barcode: { message: (siteUrl || 'https://lealtad-prueba.vercel.app') + '?c=' + clientPhone, format: 'PKBarcodeFormatQR', messageEncoding: 'iso-8859-1', altText: clientPhone },
-      barcodes: [{ message: (siteUrl || 'https://lealtad-prueba.vercel.app') + '?c=' + clientPhone, format: 'PKBarcodeFormatQR', messageEncoding: 'iso-8859-1', altText: clientPhone }],
+      barcode: { message: (siteUrl || 'https://lealtad-prueba.vercel.app') + '?c=' + clientPhone, format: 'QR', altText: 'Escanea para sumar sello' },
+      barcodes: [{ message: (siteUrl || 'https://lealtad-prueba.vercel.app') + '?c=' + clientPhone, format: 'QR', altText: 'Escanea para sumar sello' }],
       locations: (businessLat && businessLng) ? [
         { latitude: parseFloat(businessLat), longitude: parseFloat(businessLng), relevantText: '¡Estás cerca de ' + (businessName || 'Cafetería Mi tostadita') + '! Pasa a sumar un sello' }
       ] : [],
