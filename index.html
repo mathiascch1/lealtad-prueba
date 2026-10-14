@@ -313,7 +313,8 @@ const addLog=(k,txt)=>{const e={k,txt,t:Date.now()};D.log.unshift(e);D.log=D.log
 const AL='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const ncode=x=>String(x).toUpperCase().replace(/[^A-Z0-9]/g,'');
 function newCode(){let c;do{c='';for(let i=0;i<6;i++)c+=AL[Math.floor(Math.random()*AL.length)];c=c.slice(0,3)+'-'+c.slice(3)}while(D.clients.some(x=>x.code===c));return c}
-function showToast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
+function showToast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+function setFlash(m){flash=m;render();if(m)setTimeout(()=>{flash='';render()},3500)}
 addEventListener('storage',e=>{if(e.key===LS&&document.activeElement.tagName!=='INPUT'){D=lsR()||dflt();render()}});
 
 // ================================================================
@@ -619,17 +620,16 @@ document.addEventListener('click',async e=>{
     c.s++;c.tot=(c.tot||0)+1;c.t=Date.now();
     if(c.s>=m){c.s=m;c.r=true}
     addLog('s',`+1 a ${c.n} (${c.s}/${m})`);
-    flash=`✅ Sello a ${esc(c.n)}: ${c.s}/${m}${c.r?' ¡Premio!':''}`;
-    await fbSaveC(c);walletUpdate(c);showToast('+1 sello ⭐');
+    await fbSaveC(c);walletUpdate(c);setFlash(`✅ Sello a ${esc(c.n)}: ${c.s}/${m}${c.r?' ¡Premio!':''}`);showToast('+1 sello ⭐');
   }
   else if(a==='undo'&&c){
     c.s=Math.max(0,c.s-1);c.tot=Math.max(0,(c.tot||0)-1);c.r=false;
-    addLog('u','−1 a '+c.n);flash='↩ Se quitó 1 sello a '+esc(c.n);
+    addLog('u','−1 a '+c.n);setFlash('↩ Se quitó 1 sello a '+esc(c.n));
     await fbSaveC(c);walletUpdate(c);
   }
   else if(a==='deliver'&&c){
     c.s=0;c.r=false;c.t=Date.now();c.rw=(c.rw||0)+1;
-    addLog('p','Premio: '+c.n);flash='🎁 Premio entregado a '+esc(c.n);
+    addLog('p','Premio: '+c.n);setFlash('🎁 Premio entregado a '+esc(c.n));
     await fbSaveC(c);showToast('Premio entregado 🎁');
   }
   else if(a==='newc'){
@@ -637,13 +637,13 @@ document.addEventListener('click',async e=>{
     if(p.length!==9||p[0]!=='9'){$('#e2').textContent='Celular válido de 9 dígitos que empiece con 9.';return}
     const nc={id:'c'+Date.now(),n:q.trim(),p,em,code:newCode(),s:0,r:false,t:Date.now(),at:Date.now(),tot:0,rw:0};
     D.clients.push(nc);addLog('n','Nuevo: '+nc.n);
-    flash='👤 '+esc(nc.n)+' — Código: '+nc.code;
+    setFlash('👤 '+esc(nc.n)+' — Código: '+nc.code);
     await fbSaveC(nc);
   }
   else if(a==='delclient'){
     if(!confirm('¿Eliminar cliente permanentemente?'))return;
     D.clients=D.clients.filter(x=>x.id!==id);sel=null;
-    addLog('d','Eliminado');flash='Cliente eliminado';
+    addLog('d','Eliminado');setFlash('Cliente eliminado');
     await fbDelC(id);
   }
   else if(a==='cfg'){
@@ -652,7 +652,7 @@ document.addEventListener('click',async e=>{
     if(!$('#ck').value.trim()){showToast('Pon una clave');return}
     D.cfg={name:$('#cn').value.trim()||'Mi negocio',cat:$('#cc').value.trim()||'Cafetería',prize:$('#cp').value.trim()||'Premio',meta:mm,end:$('#ce').value.trim(),addr:$('#ca').value.trim(),hrs:$('#ch').value.trim(),pin:$('#ck').value.trim()};
     D.clients.forEach(x=>{if(x.s>=mm){x.s=mm;x.r=true}else x.r=false});
-    flash='💾 Ajustes guardados';await fbSaveCfg();
+    await fbSaveCfg();setFlash('💾 Ajustes guardados');
     if(useFB)for(const cl of D.clients)await fbSaveC(cl);
     showToast('Guardado ✓');
   }
