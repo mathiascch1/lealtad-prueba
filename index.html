@@ -269,7 +269,7 @@ async function walletCreate(c){
         businessLng:BUSINESS_LNG
       })
     });
-    if(!res.ok)throw new Error('API error '+res.status);
+    if(!res.ok){const et=await res.text();console.error('API:',res.status,et);throw new Error(res.status+': '+et)}
     const data=await res.json();
     if(data.serial){
       c.walletSerial=data.serial;
@@ -277,7 +277,7 @@ async function walletCreate(c){
       save();await fbSaveC(c);
     }
     return data;
-  }catch(e){console.error('walletCreate:',e);return null}
+  }catch(e){console.error('walletCreate error:',e.message);showToast('Error: '+e.message);return null}
 }
 
 async function walletUpdate(c){
@@ -591,7 +591,7 @@ document.addEventListener('click',async e=>{
     if(wr&&wr.shareUrl){showToast('¡Tarjeta guardada! 📱');window.open(wr.shareUrl,'_blank')}
     else{
       el.disabled=false;el.innerHTML='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 10h20"/><rect x="14" y="14" width="4" height="2" rx="1"/></svg> Guardar en Apple / Google Wallet';
-      showToast('Wallet no disponible — requiere desplegar en Vercel');
+      showToast('Error Wallet — abre consola (F12) para ver detalles');
     }
   }
   else if(a==='goCard'){D.me=justReg;justReg=null}
