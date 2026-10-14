@@ -270,7 +270,8 @@ async function walletCreate(c){
         walletColor:D.cfg.wColor||'',
         walletLogo:D.cfg.wLogo||'',
         walletStrip:D.cfg.wStrip||'',
-        walletIcon:D.cfg.wIcon||''
+        walletIcon:D.cfg.wIcon||'',
+        siteUrl:location.origin
       })
     });
     if(!res.ok){const et=await res.text();console.error('API:',res.status,et);throw new Error(res.status+': '+et)}
@@ -623,7 +624,8 @@ document.addEventListener('click',async e=>{
     editMode=false;await fbSaveC(c2);showToast('Datos actualizados ✓');
   }
   else if(a==='alogin'){
-    if($('#pin').value===D.cfg.pin){adminOk=true;pinErr=false;if(useFB)await fbLoad();else{const d=lsR();if(d)D=d}}
+    if($('#pin').value===D.cfg.pin){adminOk=true;pinErr=false;if(useFB)await fbLoad();else{const d=lsR();if(d)D=d}
+      if(window._qrPhone){const fc=D.clients.find(x=>x.p===window._qrPhone);if(fc)sel=fc.id;window._qrPhone=null}}
     else pinErr=true;
   }
   else if(a==='alogout'){adminOk=false;view='inicio';q='';flash=''}
@@ -691,6 +693,20 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='
 (async()=>{
   useFB=await initFB();
   if(useFB)await fbLoad();
+  // Detectar QR escaneado: ?c=TELEFONO
+  const urlP=new URLSearchParams(location.search);
+  const qrPhone=urlP.get('c');
+  if(qrPhone){
+    history.replaceState(null,'',location.pathname);
+    view='admin';
+    // Si ya es admin, seleccionar cliente directo
+    if(adminOk){
+      const fc=D.clients.find(x=>x.p===qrPhone);
+      if(fc)sel=fc.id;
+    }
+    // Guardar teléfono para seleccionar después del PIN
+    window._qrPhone=qrPhone;
+  }
   render();
 })();
 </script>
