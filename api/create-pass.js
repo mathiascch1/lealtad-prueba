@@ -1,8 +1,33 @@
 // /api/create-pass.js — Vercel Serverless Function
-// Crea un pase de Apple/Google Wallet via WalletWallet API
+const https = require('https');
 
-export default async function handler(req, res) {
-  // CORS
+function apiRequest(method, path, body, apiKey) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const req = https.request({
+      hostname: 'api.walletwallet.dev',
+      path: path,
+      method: method,
+      headers: {
+        'Authorization': 'Bearer ' + apiKey,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data)
+      }
+    }, (res) => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        try { resolve({ status: res.statusCode, data: JSON.parse(body) }); }
+        catch(e) { resolve({ status: res.statusCode, data: body }); }
+      });
+    });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -22,12 +47,12 @@ export default async function handler(req, res) {
     const passData = {
       passType: 'storeCard',
       organizationName: businessName || 'Cafetería Mi tostadita',
-      description: `Tarjeta de lealtad - ${businessName || 'Cafetería Mi tostadita'}`,
+      description: 'Tarjeta de lealtad - ' + (businessName || 'Cafetería Mi tostadita'),
       backgroundColor: 'rgb(232, 148, 58)',
       foregroundColor: 'rgb(255, 255, 255)',
       labelColor: 'rgb(255, 243, 196)',
       headerFields: [
-        { key: 'stamps', label: 'SELLOS', value: `${stamps || 0} / ${maxStamps || 6}` }
+        { key: 'stamps', label: 'SELLOS', value: (stamps || 0) + ' / ' + (maxStamps || 6) }
       ],
       primaryFields: [
         { key: 'name', label: 'CLIENTE', value: clientName }
@@ -37,11 +62,35 @@ export default async function handler(req, res) {
         { key: 'phone', label: 'CELULAR', value: clientPhone }
       ],
       auxiliaryFields: [
-        { key: 'progress', label: 'PROGRESO', value: stamps >= maxStamps ? '¡PREMIO LISTO!' : `Te faltan ${(maxStamps || 6) - (stamps || 0)} sellos` }
+        { key: 'progress', label: 'PROGRESO', value: stamps >= maxStamps ? '¡PREMIO LISTO!' : 'Te faltan ' + ((maxStamps || 6) - (stamps || 0)) + ' sellos' }
       ],
       backFields: [
-        { key: 'rules', label: 'Cómo funciona', value: `Haz tu compra y dile tu nombre o número al cajero. Él te suma el sello. Al juntar ${maxStamps || 6} sellos, tu premio es gratis.` },
+        { key: 'rules', label: 'Cómo funciona', value: 'Haz tu compra y dile tu nombre o número al cajero. Él te suma el sello. Al juntar ' + (maxStamps || 6) + ' sellos, tu premio es gratis.' },
         { key: 'addr', label: 'Dirección', value: businessAddr || '' },
         { key: 'contact', label: 'Contacto', value: clientPhone }
       ],
-      barcode: { message: clientPhone, format: 'PKBarcodeFormatQR',
+      barcode: { message: clientPhone, format: 'PKBarcodeFormatQR', messageEncoding: 'iso-8859-1', altText: clientPhone },
+      locations: (businessLat && businessLng) ? [
+        { latitude: parseFloat(businessLat), longitude: parseFloat(businessLng), relevantText: '¡Estás cerca de ' + (businessName || 'Cafetería Mi tostadita') + '! Pasa a sumar un sello' }
+      ] : [],
+      changeMessage: 'Tu tarjeta de lealtad se ha actualizado.'
+    };
+
+    const result = await apiRequest('POST', '/api/passes', passData, API_KEY);
+
+    if (result.status >= 400) {
+      console.error('WalletWallet error:', result.status, result.data);
+      return res.status(result.status).json({ error: 'Error al crear el pase', details: result.data });
+    }
+
+    return res.status(200).json({
+      serial: result.data.serial || result.data.id,
+      shareUrl: result.data.shareUrl || result.data.url,
+      success: true
+    });
+
+  } catch (err) {
+    console.error('create-pass error:', err);
+    return res.status(500).json({ error: 'Error interno del servidor', msg: err.message });
+  }
+};
