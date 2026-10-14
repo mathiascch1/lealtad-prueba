@@ -157,7 +157,6 @@ details.set summary{font-weight:700;cursor:pointer;padding:6px 0}
 .nav button span{font-size:20px;display:flex;align-items:center;justify-content:center}.nav button.on{color:var(--ink)}
 
 /* Floating QR */
-.fab{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom,0px));right:18px;width:52px;height:52px;border-radius:50%;background:#333;color:#fff;border:0;font-size:20px;box-shadow:0 4px 16px #0003;cursor:pointer;z-index:9;display:grid;place-items:center}
 
 /* QR section */
 .qr-box{background:#fff;border-radius:16px;padding:20px;display:inline-block;box-shadow:0 2px 10px #0001}
@@ -166,8 +165,8 @@ details.set summary{font-weight:700;cursor:pointer;padding:6px 0}
 .qr-foot{font-size:10px;color:#888;text-align:center;margin-top:8px}
 
 /* Toast */
-.toast{position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(100px);background:#333;color:#fff;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 4px 16px #0003;transition:transform .3s;z-index:100;white-space:nowrap;max-width:calc(100vw - 32px)}
-.toast.show{transform:translateX(-50%) translateY(0)}
+.toast{position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(200px);background:#333;color:#fff;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 4px 16px #0003;transition:transform .3s,opacity .3s;z-index:100;white-space:nowrap;max-width:calc(100vw - 32px);opacity:0;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
 .db-badge{font-size:11px;color:var(--mute);text-align:center;padding:8px;opacity:.7}
 
 /* Wallet button */
@@ -319,7 +318,7 @@ const AL='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const ncode=x=>String(x).toUpperCase().replace(/[^A-Z0-9]/g,'');
 function newCode(){let c;do{c='';for(let i=0;i<6;i++)c+=AL[Math.floor(Math.random()*AL.length)];c=c.slice(0,3)+'-'+c.slice(3)}while(D.clients.some(x=>x.code===c));return c}
 let _toastT;function showToast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(_toastT);_toastT=setTimeout(()=>t.classList.remove('show'),2500)}
-function setFlash(m){flash=m;render();if(m)setTimeout(()=>{flash='';render()},3500)}
+let _flashT;function setFlash(m){flash=m;render();clearTimeout(_flashT);if(m)_flashT=setTimeout(()=>{flash='';render()},3500)}
 addEventListener('storage',e=>{if(e.key===LS&&document.activeElement.tagName!=='INPUT'){D=lsR()||dflt();render()}});
 
 // ================================================================
